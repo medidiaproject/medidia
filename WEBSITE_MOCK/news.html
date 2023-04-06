@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blog Articles</title>
+    <link rel="icon" href="favicon.ico">
+    <!-- Bootstrap CSS -->
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+  integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+   <!-- Custom CSS -->
+  <link rel="stylesheet" type="text/css" href="style.css">
+
+</head>
+
+<body> 
+    <nav class="navbar navbar-expand-md navbar-light bg-light">
+
+        <a class="navbar-brand" href="E:\University\Semester 2\MS812 Project\Website Code\index.html">
+          <img src="images\logo.png" alt="Logo">
+        </a>   
+        <ul class="menu">
+          <li >
+              <a href="index.html" >Home</a>
+          </li>
+          <li class="nav-item dropdown">
+              <a href="aboutus.html" >About Us</a>
+          </li>
+          <li class="nav-item dropdown">
+              <a href="blogarticlespg1.html" >News</a>
+            
+          </li>
+          <li class="nav-item dropdown">
+              <!-- <a href="/blogarticlespg1.html" class="nav-link dropdown-toggle" data-toggle="dropdown">Blog</a> -->
+              <a href="blogarticlespg1.html">Blog</a>
+          </li>
+      </ul>
+    
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+          aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ml-auto">
+              <li class="nav-item">
+                <button class="btn btn-login" type="button" onclick="document.location='login.html'">Login</button>
+              </li>
+              <li class="nav-item">
+                <button class="btn btn-signup" type="button" onclick="document.location='signup.html'">Signup</button>
+              </li>
+            </ul>
+          </div>
+    
+      </nav>
+      <!-- Link to jQuery and Bootstrap JS files, sub menu won't work without these -->
+
+      <script src="https://code.jquery.com/jquery-3.6.0.slim.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/2.9.3/umd/popper.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.6.0/js/bootstrap.min.js"></script>
+
+      <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+      <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+      
+      <script>
+        const config = {
+          apiKey: "AIzaSyAw-NQtTDnu5HG2nyIZlC4GLnHhG53-sVU",
+          authDomain: "medidiaproject.firebaseapp.com",
+          databaseURL: "https://medidiaproject-default-rtdb.europe-west1.firebasedatabase.app",
+          projectId: "medidiaproject",
+          storageBucket: "medidiaproject.appspot.com",
+          messagingSenderId: "276942428473",
+          appId: "1:276942428473:web:fa0e53b2bbcd13291030e8",
+          measurementId: "G-QGHFEET1RG"
+        };
+        firebase.initializeApp(config);
+
+        // Get a reference to the database
+        const database = firebase.firestore();
+        let databse = firebase.firestore();
+        
+
+
+    let myCollection = database.collection('blogposts');
+// set the initial query limit to 20
+    // let query = myCollection.limit(100);
+    // let query = myCollection
+    let query = myCollection.orderBy("TimeStamp", "desc");
+
+// Use startAfter to paginate through the remaining documents
+let lastVisibleDoc = null;
+let isLastPageReached = false;
+let currentPage = 1;
+const itemsPerPage = 20;
+
+function displayData(page) {
+  // if (isLastPageReached) {
+  //   console.log("All data displayed");
+  //   return;
+  // }
+
+  // calculate the start and end index of the items to display on the current page
+  const startIndex = (page - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  let index = 0;
+
+  // update the query to only retrieve the items for the current page
+  // query = myCollection.limit(endIndex);
+  if (page > 1) {
+    query = query.startAfter(lastVisibleDoc);
+  }
+
+  query.get().then((querySnapshot) => {
+    if (querySnapshot.size === 0) {
+      console.log("No data available");
+      isLastPageReached = true;
+      return;
+    }
+
+    let gridContainer = document.querySelector('.grid-container');
+    gridContainer.innerHTML = '';
+
+    querySnapshot.forEach((doc) => {
+      // if (startIndex <= endIndex) {
+       if (index >= startIndex && index < endIndex) {
+      
+        let data = doc.data();
+        let gridItem = document.createElement('div');
+        gridItem.className = 'grid-item';
+
+        gridItem.innerHTML = `
+          <a href="${data.BlogURL}">${data.BlogName}</a>
+            <p>${data.TimeStamp}</p>
+          
+        `;
+
+        gridContainer.appendChild(gridItem);
+        index++;
+      }
+
+      // set the last visible document for pagination
+      lastVisibleDoc = doc;
+      // startIndex--;
+    });
+
+    // update isLastPageReached based on the number of items retrieved
+    // if (startIndex >= querySnapshot.size) {
+    if (index >= querySnapshot.size) {
+      isLastPageReached = true;
+    }
+
+    // hide or show pagination buttons based on the current page and number of items
+    const pagination = document.querySelector('.pagination');
+    if (pagination) {
+      pagination.innerHTML = '';
+      const pageCount = Math.ceil(querySnapshot.size / itemsPerPage);
+      for (let i = 1; i <= pageCount; i++) {
+        let paginationButton = document.createElement('button');
+        paginationButton.innerText = i;
+        if (i === currentPage) {
+          paginationButton.className = 'active';
+        }
+        paginationButton.addEventListener('click', () => {
+          currentPage = i;
+          displayData(currentPage);
+        });
+        pagination.appendChild(paginationButton);
+      }
+      if (pageCount === 0) {
+        pagination.style.display = 'none';
+      } else {
+        pagination.style.display = 'flex';
+      }
+//       const paginationButtons = document.querySelectorAll('.pagination button');
+
+//       paginationButtons.forEach(button => {
+//       button.addEventListener('click', () => {
+//       currentPage = parseInt(button.innerText);
+//       displayData(currentPage);
+//   });
+// });
+
+
+
+    }
+  });
+}
+
+
+
+// const pagination = document.querySelector('.pagination');
+// if (pagination) {
+//   pagination.innerHTML = '';
+//   const pageCount = Math.ceil(querySnapshot.size / itemsPerPage);
+//   for (let i = 1; i <= pageCount; i++) {
+//     let paginationButton = document.createElement('li');
+//     let paginationLink = document.createElement('a');
+//     paginationLink.href = '#';
+//     paginationLink.innerText = i;
+//     if (i === currentPage) {
+//       paginationLink.className = 'active';
+//     }
+//     paginationLink.addEventListener('click', () => {
+//       currentPage = i;
+//       displayData(currentPage);
+//     });
+//     paginationButton.appendChild(paginationLink);
+//     pagination.appendChild(paginationButton);
+//   }
+//   if (pageCount === 0) {
+//     pagination.style.display = 'none';
+//   } else {
+//     pagination.style.display = 'flex';
+//   }
+// }
+
+// Initial data display
+displayData(currentPage);
+
+// const nextButton = document.querySelector('#next');
+// nextButton.addEventListener('click', () => {
+//   currentPage++;
+//   displayData(currentPage);
+// });               
+
+
+
+// const list_element = document.getElementById('myCollection');
+// const pagination_element = document.getElementById('pagination');
+
+// let current_page = 1;
+// let rows = 5;
+
+// function DisplayList (items, wrapper, rows_per_page, page) {
+// 	wrapper.innerHTML = "";
+// 	page--;
+
+// 	let start = rows_per_page * page;
+// 	let end = start + rows_per_page;
+// 	let paginatedItems = items.slice(start, end);
+
+// 	for (let i = 0; i < paginatedItems.length; i++) {
+// 		let item = paginatedItems[i];
+
+// 		let item_element = document.createElement('div');
+// 		item_element.classList.add('item');
+// 		item_element.innerText = item;
+		
+// 		wrapper.appendChild(item_element);
+// 	}
+// }
+
+// function SetupPagination (items, wrapper, rows_per_page) {
+// 	wrapper.innerHTML = "";
+
+// 	let page_count = Math.ceil(items.length / rows_per_page);
+// 	for (let i = 1; i < page_count + 1; i++) {
+// 		let btn = PaginationButton(i, items);
+// 		wrapper.appendChild(btn);
+// 	}
+// }
+
+// function PaginationButton (page, items) {
+// 	let button = document.createElement('button');
+// 	button.innerText = page;
+
+// 	if (current_page == page) button.classList.add('active');
+
+// 	button.addEventListener('click', function () {
+// 		current_page = page;
+// 		DisplayList(items, list_element, rows, current_page);
+
+// 		let current_btn = document.querySelector('.pagenumbers button.active');
+// 		current_btn.classList.remove('active');
+
+// 		button.classList.add('active');
+// 	});
+
+// 	return button;
+// }
+
+// DisplayList(myCollection, list_element, rows, current_page);
+// SetupPagination(myCollection, pagination_element, rows);
+
+
+
+// var tbody = document.querySelector("tbody");
+// 		var pageUl = document.querySelector(".pagination");
+// 		var itemShow = document.querySelector("#itemperpage");
+// 		var tr = tbody.querySelectorAll("tr");
+// 		var emptyBox = [];
+// 		var index = 1;
+// 		var itemPerPage = 8;
+
+// 		for(let i=0; i<tr.length; i++){ emptyBox.push(tr[i]);}
+
+// 		itemShow.onchange = giveTrPerPage;
+// 		function giveTrPerPage(){
+// 			itemPerPage = Number(this.value);
+// 			// console.log(itemPerPage);
+// 			displayPage(itemPerPage);
+// 			pageGenerator(itemPerPage);
+// 			getpagElement(itemPerPage);
+// 		}
+
+// 		function displayPage(limit){
+// 			tbody.innerHTML = '';
+// 			for(let i=0; i<limit; i++){
+// 				tbody.appendChild(emptyBox[i]);
+// 			}
+// 			const  pageNum = pageUl.querySelectorAll('.list');
+// 			pageNum.forEach(n => n.remove());
+// 		}
+// 		displayPage(itemPerPage);
+
+// 		function pageGenerator(getem){
+// 			const num_of_tr = emptyBox.length;
+// 			if(num_of_tr <= getem){
+// 				pageUl.style.display = 'none';
+// 			}else{
+// 				pageUl.style.display = 'flex';
+// 				const num_Of_Page = Math.ceil(num_of_tr/getem);
+// 				for(i=1; i<=num_Of_Page; i++){
+// 					const li = document.createElement('li'); li.className = 'list';
+// 					const a =document.createElement('a'); a.href = '#'; a.innerText = i;
+// 					a.setAttribute('data-page', i);
+// 					li.appendChild(a);
+// 					pageUl.insertBefore(li,pageUl.querySelector('.next'));
+// 				}
+// 			}
+// 		}
+// 		pageGenerator(itemPerPage);
+// 		let pageLink = pageUl.querySelectorAll("a");
+// 		let lastPage =  pageLink.length - 2;
+		
+// 		function pageRunner(page, items, lastPage, active){
+// 			for(button of page){
+// 				button.onclick = e=>{
+// 					const page_num = e.target.getAttribute('data-page');
+// 					const page_mover = e.target.getAttribute('id');
+// 					if(page_num != null){
+// 						index = page_num;
+
+// 					}else{
+// 						if(page_mover === "next"){
+// 							index++;
+// 							if(index >= lastPage){
+// 								index = lastPage;
+// 							}
+// 						}else{
+// 							index--;
+// 							if(index <= 1){
+// 								index = 1;
+// 							}
+// 						}
+// 					}
+// 					pageMaker(index, items, active);
+// 				}
+// 			}
+
+// 		}
+// 		var pageLi = pageUl.querySelectorAll('.list'); pageLi[0].classList.add("active");
+// 		pageRunner(pageLink, itemPerPage, lastPage, pageLi);
+
+// 		function getpagElement(val){
+// 			let pagelink = pageUl.querySelectorAll("a");
+// 			let lastpage =  pagelink.length - 2;
+// 			let pageli = pageUl.querySelectorAll('.list');
+// 			pageli[0].classList.add("active");
+// 			pageRunner(pagelink, val, lastpage, pageli);
+			
+// 		}
+	
+		
+		
+// 		function pageMaker(index, item_per_page, activePage){
+// 			const start = item_per_page * index;
+// 			const end  = start + item_per_page;
+// 			const current_page =  emptyBox.slice((start - item_per_page), (end-item_per_page));
+// 			tbody.innerHTML = "";
+// 			for(let j=0; j<current_page.length; j++){
+// 				let item = current_page[j];					
+// 				tbody.appendChild(item);
+// 			}
+// 			Array.from(activePage).forEach((e)=>{e.classList.remove("active");});
+//      		activePage[index-1].classList.add("active");
+// 		}
+
+
+
+
+
+// 		// search content 
+// 		var search = document.getElementById("search");
+// 		search.onkeyup = e=>{
+// 			const text = e.target.value;
+// 			for(let i=0; i<tr.length; i++){
+// 				const matchText = tr[i].querySelectorAll("td")[2].innerText;
+// 				if(matchText.toLowerCase().indexOf(text.toLowerCase()) > -1){
+// 					tr[i].style.visibility = "visible";
+// 				}else{
+// 					tr[i].style.visibility= "collapse";
+// 				}
+// 			}
+// 		}
+
+
+// const database = firebase.firestore();
+// const collection = database.collection('blogposts');
+// const ITEMS_PER_PAGE = 20;
+
+// // Calculate total number of pages based on number of items
+// collection.get().then(querySnapshot => {
+//   const totalItems = querySnapshot.size;
+//   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+
+//   // Generate the HTML for the page links
+//   function generatePageLinks() {
+//     let linksHTML = '';
+//     for (let i = 1; i <= totalPages; i++) {
+//       linksHTML += `<a href="#" onclick="displayPage(${i})">${i}</a> `;
+//     }
+//     document.getElementById('page-links').innerHTML = linksHTML;
+//   }
+
+//   // Display the initial page
+//   displayPage(1);
+
+//   // Display items for a specific page
+//   function displayPage(page) {
+//     const offset = (page - 1) * ITEMS_PER_PAGE;
+//     collection
+//       .orderBy('timestamp', 'desc')
+//       .limit(ITEMS_PER_PAGE)
+//       // .offset(offset)
+//       .get()
+//       .then(querySnapshot => {
+//         const items = querySnapshot.docs.map(doc => doc.data());
+//         // Display the items on the page
+//         // ...
+//       });
+//   }
+
+//   // Add the page links to the HTML DOM
+//   generatePageLinks();
+// });
+
+      </script>
+      <!-- CODE GOES HERE -->
+      <div class="grid-container">
+
+	</div> 
+
+  <div class="bottom-field">
+    <ul class="pagination">
+      <li class="prev"><a href="#" id="prev">&#139;</a></li>
+        <!-- page number here -->
+      <li class="next"><a href="#" id="next">&#155;</a></li>
+    </ul>
+</div>
+
+
+
+</script>
+
+</body>
+    <!-- FOOTER -->
+    <footer>
+        <div class="container">
+          <div class="row">
+            <div class="col-md-6 chatbot">
+              <h2>Chat with us</h2>
+              <p>We're here to answer your questions and help you with anything you need.</p>
+              <button class="btn btn-chat">Start Chatting</button>
+            </div>
+            <div class="col-md-6 contact">
+              <h2>Contact Us</h2>
+              <p>Med-Di-Dia Limited: Galway Technology Centre,
+                <br>Mervue Business Park, Galway, Ireland</p>
+              <p>Tel: +353 (0)91-704804 | Email: mdd@mddltd.com</p>
+              <br>
+              <p>Get in touch with us on social media or send us an email.</p>
+      
+              <div class="socials">
+                <a href="https://twitter.com/MedDiDia"><img src="images/logo-twitter.svg" alt="Twitter" width="24"
+                        height="24" aria-label="Twitter" /></a>
+                <a href="https://www.linkedin.com/company/med-di-dia-ltd/?viewAsMember=true"><img src="images/logo-linkedin.svg" alt="LinkedIn"
+                        width="24" height="24" aria-label="LinkedIn" /></a>
+                <a href="https://www.youtube.com/channel/UCJOJYZcNezk1DpOq0x3HrIw?cbrd=1&themeRefresh=1"><img src="images/logo-youtube.svg" alt="Youtube"
+                        width="24" height="24" aria-label="Youtube" /></a>
+            </div>
+            </div>
+        </div>
+    </footer>  
+</html>
